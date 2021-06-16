@@ -19,11 +19,11 @@ from util import DataWithLabel, Rotate90
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 BATCH_SIZE = 1024
 WEIGHT_DECAY = 0
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 NUM_WORKER = 8
 CHECKPOINT = None
-NUM_EPOCH = 100
-CHECKPOINT_INTERVAL = 10
+NUM_EPOCH = 30
+CHECKPOINT_INTERVAL = 1
 
 # data prerocess
 df = pd.read_csv("train_labels.csv")
@@ -72,7 +72,7 @@ model = model.to(device)
 criterion = nn.BCELoss()
 optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE,
                       weight_decay=WEIGHT_DECAY)
-scheduler = lr_scheduler.StepLR(optimizer, 25, 0.1)
+scheduler = lr_scheduler.StepLR(optimizer, 10, 0.1)
 
 # Load checkpoint
 if CHECKPOINT:
@@ -86,18 +86,17 @@ if CHECKPOINT:
 best_model_weights = copy.deepcopy(model.state_dict())
 best_accuracy = 0.0
 best_epoch = 0
+training_time = 0
 
 with open("log.txt", mode='w') as file:
     file.write("Batch size: " + str(BATCH_SIZE))
-    file.write("Number of epochs: " + str(NUM_EPOCH))
-    file.write("Learning rate: " + str(LEARNING_RATE))
-    file.write("Weight decay: " + str(WEIGHT_DECAY))
+    file.write(" Number of epochs: " + str(NUM_EPOCH))
+    file.write(" Learning rate: " + str(LEARNING_RATE))
+    file.write(" Weight decay: " + str(WEIGHT_DECAY))
 
 # Iterate through all epochs
 for epoch in range(NUM_EPOCH):
     print("Epoch {}/{}".format(epoch + 1, NUM_EPOCH))
-    epoch_loss = 0.0
-    epoch_correct = 0
     train_accuracy = 0
     val_accuracy = 0
 
@@ -109,6 +108,8 @@ for epoch in range(NUM_EPOCH):
         else:
             model.eval()
         training_start = time.time()
+        epoch_loss = 0.0
+        epoch_correct = 0
 
         # Iterate through all batches
         for inputs, labels in loaders[phase]:
@@ -152,11 +153,13 @@ for epoch in range(NUM_EPOCH):
                 best_model_weights = copy.deepcopy(model.state_dict())
                 best_epoch = epoch + 1
 
+        training_time += (time.time() - training_start)
+
     print("Batch {} completed".format(batch_count))
 
     if (epoch + 1) % CHECKPOINT_INTERVAL == 0:
         with open("log.txt", mode="a+") as file:
-            file.write("{}: train: {:.4f}, val: {:.4f}".format(
+            file.write("{}: train: {:.4f}, val: {:.4f}\n".format(
                 str(epoch + 1).zfill(3), train_accuracy, val_accuracy
             ))
         PATH = 'checkpoint_' + str(epoch + 1) + '.pth'
@@ -166,10 +169,12 @@ for epoch in range(NUM_EPOCH):
             'schedular_State_dict': scheduler.state_dict()
         }, PATH)
 
-print("Best accuracy: {:.4f} at epoch {}".format(
-    best_accuracy, best_epoch,
+print("Best accuracy: {:.4f} at epoch {}, total time: {}s".format(
+    best_accuracy, best_epoch, training_time
 ))
 model.load_state_dict(best_model_weights)
 torch.save({
     'model_state_dict': model.state_dict()
 }, "best_weights.pth")
+
+# Using best model
