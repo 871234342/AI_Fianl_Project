@@ -1,0 +1,63 @@
+Test case: 6Batch size: 1024Number of epochs: 50Learning rate: 0.01Weight decay: 0LR_step: 20
+Compose(
+    GaussianBlur(kernel_size=(5, 5), sigma=(0.1, 2.0))
+    CenterCrop(size=(48, 48))
+    <util.Rotate90 object at 0x7fee143efeb8>
+    RandomHorizontalFlip(p=0.5)
+    RandomVerticalFlip(p=0.5)
+    ToTensor()
+    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    Lambda()
+)
+private: 0.7862 public: 0.8128
+001: train: 0.7659, val: 0.8089
+002: train: 0.8112, val: 0.8237
+003: train: 0.8237, val: 0.8358
+004: train: 0.8327, val: 0.8441
+005: train: 0.8395, val: 0.8477
+006: train: 0.8443, val: 0.8519
+007: train: 0.8482, val: 0.8539
+008: train: 0.8522, val: 0.8552
+009: train: 0.8555, val: 0.8627
+010: train: 0.8576, val: 0.8628
+011: train: 0.8604, val: 0.8637
+012: train: 0.8604, val: 0.8647
+013: train: 0.8598, val: 0.8643
+014: train: 0.8618, val: 0.8643
+015: train: 0.8617, val: 0.8632
+016: train: 0.8618, val: 0.8667
+017: train: 0.8618, val: 0.8652
+018: train: 0.8611, val: 0.8655
+019: train: 0.8618, val: 0.8660
+020: train: 0.8616, val: 0.8659
+021: train: 0.8624, val: 0.8691
+022: train: 0.8618, val: 0.8669
+023: train: 0.8628, val: 0.8657
+024: train: 0.8634, val: 0.8681
+025: train: 0.8623, val: 0.8680
+026: train: 0.8620, val: 0.8665
+027: train: 0.8621, val: 0.8652
+028: train: 0.8631, val: 0.8650
+029: train: 0.8631, val: 0.8659
+030: train: 0.8633, val: 0.8695
+031: train: 0.8633, val: 0.8686
+032: train: 0.8628, val: 0.8660
+033: train: 0.8631, val: 0.8655
+034: train: 0.8634, val: 0.8679
+035: train: 0.8629, val: 0.8674
+036: train: 0.8625, val: 0.8666
+037: train: 0.8631, val: 0.8682
+038: train: 0.8633, val: 0.8654
+039: train: 0.8626, val: 0.8696
+040: train: 0.8633, val: 0.8689
+041: train: 0.8633, val: 0.8686
+042: train: 0.8624, val: 0.8682
+043: train: 0.8623, val: 0.8652
+044: train: 0.8627, val: 0.8700
+045: train: 0.8630, val: 0.8662
+046: train: 0.8634, val: 0.8668
+047: train: 0.8627, val: 0.8662
+048: train: 0.8620, val: 0.8682
+049: train: 0.8636, val: 0.8659
+050: train: 0.8628, val: 0.8672
+Best accuracy: 0.8700 at epoch44
