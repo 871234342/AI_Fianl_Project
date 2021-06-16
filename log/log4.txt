@@ -1,0 +1,42 @@
+Batch size: 1024 Number of epochs: 30 Learning rate: 0.001 Weight decay: 0 LR_step: 10
+Compose(
+    GaussianBlur(kernel_size=(5, 5), sigma=(0.1, 2.0))
+    CenterCrop(size=(48, 48))
+    <util.Rotate90 object at 0x7f99a47bae80>
+    RandomHorizontalFlip(p=0.5)
+    RandomVerticalFlip(p=0.5)
+    ToTensor()
+    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    Lambda()
+)
+001: train: 0.6406, val: 0.7060
+002: train: 0.7286, val: 0.7520
+003: train: 0.7570, val: 0.7651
+004: train: 0.7708, val: 0.7774
+005: train: 0.7808, val: 0.7877
+006: train: 0.7833, val: 0.7857
+007: train: 0.7858, val: 0.7880
+008: train: 0.7860, val: 0.7861
+009: train: 0.7866, val: 0.7884
+010: train: 0.7865, val: 0.7874
+011: train: 0.7880, val: 0.7894
+012: train: 0.7864, val: 0.7924
+013: train: 0.7880, val: 0.7873
+014: train: 0.7876, val: 0.7900
+015: train: 0.7877, val: 0.7893
+016: train: 0.7877, val: 0.7864
+017: train: 0.7877, val: 0.7904
+018: train: 0.7879, val: 0.7902
+019: train: 0.7869, val: 0.7927
+020: train: 0.7882, val: 0.7909
+021: train: 0.7880, val: 0.7894
+022: train: 0.7883, val: 0.7904
+023: train: 0.7878, val: 0.7906
+024: train: 0.7873, val: 0.7950
+025: train: 0.7876, val: 0.7928
+026: train: 0.7881, val: 0.7895
+027: train: 0.7867, val: 0.7887
+028: train: 0.7886, val: 0.7887
+029: train: 0.7875, val: 0.7882
+030: train: 0.7889, val: 0.7901
+Best accuracy: 0.7950 at epoch24
