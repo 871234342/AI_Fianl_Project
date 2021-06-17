@@ -1,0 +1,18 @@
+Test case: 8 Batch size: 256 Number of epochs: 100 Learning rate: 0.01 Weight decay: 0 LR_step: 40
+Compose([
+  RandomRotate90(always_apply=False, p=0.5),
+  Flip(always_apply=False, p=0.5),
+  OneOf([
+    CLAHE(always_apply=False, p=0.5, clip_limit=(1, 2), tile_grid_size=(8, 8)),
+    IAASharpen(always_apply=False, p=0.5, alpha=(0.2, 0.5), lightness=(0.5, 1.0)),
+    IAAEmboss(always_apply=False, p=0.5, alpha=(0.2, 0.5), strength=(0.2, 0.7)),
+    RandomBrightnessContrast(always_apply=False, p=0.5, brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), brightness_by_max=True),
+    ImageCompression(always_apply=False, p=0.5, quality_lower=99, quality_upper=100, compression_type=0),
+    Blur(always_apply=False, p=0.5, blur_limit=(3, 7)),
+    GaussNoise(always_apply=False, p=0.5, var_limit=(10.0, 50.0)),
+  ], p=0.5),
+  HueSaturationValue(always_apply=False, p=0.5, hue_shift_limit=(-20, 20), sat_shift_limit=(-30, 30), val_shift_limit=(-20, 20)),
+], p=1.0, bbox_params=None, keypoint_params=None, additional_targets={})
+
+private: 0.8716 public:0.8906
+best accuracy: 0.9672 at epoch37
