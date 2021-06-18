@@ -1,0 +1,27 @@
+Test case: 8 Batch size: 256 Number of epochs: 50 Learning rate: 0.01 Weight decay: 0 LR_step: 20
+Compose([
+  RandomRotate90(always_apply=False, p=0.5),
+  Flip(always_apply=False, p=0.5),
+  OneOf([
+    CLAHE(always_apply=False, p=0.5, clip_limit=(1, 2), tile_grid_size=(8, 8)),
+    IAASharpen(always_apply=False, p=0.5, alpha=(0.2, 0.5), lightness=(0.5, 1.0)),
+    IAAEmboss(always_apply=False, p=0.5, alpha=(0.2, 0.5), strength=(0.2, 0.7)),
+    RandomBrightnessContrast(always_apply=False, p=0.5, brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), brightness_by_max=True),
+    ImageCompression(always_apply=False, p=0.5, quality_lower=99, quality_upper=100, compression_type=0),
+    Blur(always_apply=False, p=0.5, blur_limit=(3, 7)),
+    GaussNoise(always_apply=False, p=0.5, var_limit=(10.0, 50.0)),
+  ], p=0.5),
+  HueSaturationValue(always_apply=False, p=0.5, hue_shift_limit=(-20, 20), sat_shift_limit=(-30, 30), val_shift_limit=(-20, 20)),
+  Normalize(always_apply=False, p=1, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), max_pixel_value=255.0),
+], p=1.0, bbox_params=None, keypoint_params=None, additional_targets={})
+005: train loss: 0.00058202 acc: 0.9442, val loss: 0.00055431 acc:0.9481
+010: train loss: 0.00044527 acc: 0.9581, val loss: 0.00047073 acc:0.9558
+015: train loss: 0.00039694 acc: 0.9632, val loss: 0.00045156 acc:0.9578
+020: train loss: 0.00038434 acc: 0.9642, val loss: 0.00044103 acc:0.9605
+025: train loss: 0.00038169 acc: 0.9643, val loss: 0.00042973 acc:0.9607
+030: train loss: 0.00037708 acc: 0.9644, val loss: 0.00044370 acc:0.9599
+035: train loss: 0.00037799 acc: 0.9650, val loss: 0.00042600 acc:0.9614
+040: train loss: 0.00037790 acc: 0.9646, val loss: 0.00043823 acc:0.9601
+045: train loss: 0.00038094 acc: 0.9646, val loss: 0.00044410 acc:0.9596
+050: train loss: 0.00037955 acc: 0.9642, val loss: 0.00044643 acc:0.9586
+Best accuracy: 0.9623 at epoch49
