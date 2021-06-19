@@ -9,13 +9,15 @@ from torch.utils.data import DataLoader
 import albumentations as A
 
 from util import DataNoLabel
+from ResNext import se_resnext101
+
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 use_cuda = torch.cuda.is_available()
-SERIAL_NUMBER = 10
+SERIAL_NUMBER = 11
 NUM_WORKER = 8
 BATCH_SIZE = 8
-FOLD = 10
+FOLD = 5
 PARALLEL = True
 
 img_ids = []
@@ -43,6 +45,7 @@ def tta(image, **kwargs):
     return imgs
 
 transform = A.Compose([
+    A.Resize(224, 224),
     A.HueSaturationValue(),
     A.Normalize(p=1),
     A.Lambda(name='tta', image=tta)
@@ -53,10 +56,10 @@ infer_loader = DataLoader(infer_set, batch_size=BATCH_SIZE,
                           num_workers=8, shuffle=False)
 
 # Construct model
-model = models.resnext50_32x4d()
-num_features = model.fc.in_features
-model.fc = nn.Sequential(
-    nn.Linear(num_features, 1),
+model = se_resnext101(1000, pretrained='imagenet')
+in_features = model.last_linear.in_features
+model.last_linear = nn.Sequential(
+    nn.Linear(in_features, 1),
     nn.Sigmoid()
 )
 
@@ -75,6 +78,7 @@ for i in range(FOLD):
     model = model.to(device)
     model.eval()
 
+
     # Inference with tta
     with torch.no_grad():
         for inputs, ids in infer_loader:
@@ -85,8 +89,6 @@ for i in range(FOLD):
             outputs = outputs.view(batch_size, n_tta, -1)
             outputs = outputs.mean(1)
 
-            #print("i: ", i)
-
             if i == 0:  # first fold
                 for j in range(batch_size):
                     img_ids.append(ids[j])
@@ -96,10 +98,30 @@ for i in range(FOLD):
                     index = img_ids.index(ids[j])
                     labels[index] += outputs[j].item()
 
+    '''
+    # Inference without tta
+    with torch.no_grad():
+        for inputs, ids in infer_loader:
+            batch_size, c, h, w = inputs.size()
+            inputs = inputs.to(device)
+            outputs = model(inputs)
+
+            if i == 0:  # first fold
+                for j in range(batch_size):
+                    img_ids.append(ids[j])
+                    labels.append(outputs[j].item())
+            else:
+                for j in range(batch_size):
+                    index = img_ids.index(ids[j])
+                    labels[index] += outputs[j].item()
+    '''
+    break       # no ensemble
+
+'''
 # average all outputs
 for i in range(len(labels)):
     labels[i] /= FOLD
-
+'''
 # predict
 pred = []
 for score in labels:

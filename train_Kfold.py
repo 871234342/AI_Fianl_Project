@@ -14,21 +14,23 @@ from sklearn.model_selection import train_test_split, KFold
 import albumentations as A
 
 from util import DataWithLabel, Rotate90
+from ResNext import se_resnext101
 
-SERIAL_NUMBER = 10
+
+SERIAL_NUMBER = 11
 LOG_FILE = "log" + str(SERIAL_NUMBER) + ".txt"
 # Hyper-parameters
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3"
-BATCH_SIZE = 1024
+BATCH_SIZE = 128
 WEIGHT_DECAY = 0
 LEARNING_RATE = 0.01
 NUM_WORKER = 8
 CHECKPOINT = None
-NUM_EPOCH = 30
+NUM_EPOCH = 12
 CHECKPOINT_INTERVAL = 2
-LR_STEP = 12
+LR_STEP = 2
 VAL_SIZE = 0.1
-FOLDS = 10
+FOLDS = 5
 
 print("EXPERIMENT {}".format(SERIAL_NUMBER))
 
@@ -45,6 +47,7 @@ print("Using ", device)
 
 # data augmentation
 transform = A.Compose([
+    A.Resize(224, 224),
     A.RandomRotate90(p=0.5),
     A.Flip(p=0.5),
     A.OneOf([
@@ -73,7 +76,7 @@ with open(LOG_FILE, mode='w') as file:
 # K Fold - start training
 kf = KFold(n_splits=FOLDS)
 for i, indexes in enumerate(kf.split(data_ids)):
-    print("training fold ", i)
+    print("training fold {}/{}".format(i+1, FOLDS))
     with open(LOG_FILE, mode='a+') as file:
         file.write("Fold " + str(i) +"\n")
 
@@ -92,10 +95,18 @@ for i, indexes in enumerate(kf.split(data_ids)):
     loaders = {'train': train_loader, 'val': val_loader}
 
     # model construction
+    '''
     model = models.resnext50_32x4d(pretrained=True)
     num_features = model.fc.in_features
     model.fc = nn.Sequential(
         nn.Linear(num_features, 1),
+        nn.Sigmoid()
+    )
+    '''
+    model = se_resnext101(1000, pretrained='imagenet')
+    in_features = model.last_linear.in_features
+    model.last_linear = nn.Sequential(
+        nn.Linear(in_features, 1),
         nn.Sigmoid()
     )
 
@@ -108,7 +119,8 @@ for i, indexes in enumerate(kf.split(data_ids)):
     criterion = nn.BCELoss()
     optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE,
                           weight_decay=WEIGHT_DECAY)
-    scheduler = lr_scheduler.StepLR(optimizer, LR_STEP, 0.1)
+    #scheduler = lr_scheduler.StepLR(optimizer, LR_STEP, 0.1)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=LR_STEP)
 
     # Train model
     best_model_weights = copy.deepcopy(model.state_dict())
@@ -151,8 +163,6 @@ for i, indexes in enumerate(kf.split(data_ids)):
                 pred = outputs > 0.5
                 epoch_correct += torch.sum(pred == labels)
 
-            scheduler.step()
-
             # print result on screen
             if phase == 'train':
                 train_loss = epoch_loss / len(train_set)
@@ -168,6 +178,9 @@ for i, indexes in enumerate(kf.split(data_ids)):
                     phase, val_loss, val_accuracy,
                     time.time() - training_start
                 ))
+
+                scheduler.step(val_loss)
+
                 # keep best model
                 if val_accuracy > best_accuracy:
                     best_accuracy = val_accuracy
@@ -177,12 +190,12 @@ for i, indexes in enumerate(kf.split(data_ids)):
             training_time += (time.time() - training_start)
 
         # keep results
+        with open(LOG_FILE, mode="a+") as file:
+            file.write("{}: train loss: {:.8f} acc: {:.4f}, val loss: {:.8f} acc:{:.4f}\n".format(
+                str(epoch + 1).zfill(3), train_loss,
+                train_accuracy, val_loss, val_accuracy
+            ))
         if (epoch + 1) % CHECKPOINT_INTERVAL == 0:
-            with open(LOG_FILE, mode="a+") as file:
-                file.write("{}: train loss: {:.8f} acc: {:.4f}, val loss: {:.8f} acc:{:.4f}\n".format(
-                    str(epoch + 1).zfill(3), train_loss,
-                    train_accuracy, val_loss, val_accuracy
-                ))
             PATH = 'checkpoint_' + str(epoch + 1) + '.pth'
             torch.save({
                 'model_state_dict': model.state_dict(),

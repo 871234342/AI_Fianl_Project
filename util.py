@@ -7,8 +7,10 @@ import numpy as np
 from skimage import io
 from PIL import Image
 from torch.utils.data import Dataset
+from torchvision import transforms
 import torchvision.transforms.functional as TF
 import time
+import albumentations as A
 
 
 class Rotate90:
@@ -39,22 +41,19 @@ class Rotate90:
         elif choice < self.p[3]:
             return TF.rotate(x, 270)
 
-            
+
 class DataWithLabel(Dataset):
-    def __init__(self, annot, img_dir, transforms=None):
+    def __init__(self, imgs, labels, img_dir, transforms=None):
         '''
-        :param annot: csv annotation file
-        :param img_dir: folder path containing images
+        :param imgs: list of image ids
+        :param labels: list of labels
+        :param img_dir: directory of images
+        :param transforms: albumentations transform
         '''
-        df = pd.read_csv(annot)
-        self.imgs = []
-        self.labels = []
+        self.imgs = imgs
+        self.labels = labels
         self.img_dir = img_dir
         self.transforms = transforms
-
-        for i in range(len(df)):
-            self.imgs.append(df.iloc[i, 0])
-            self.labels.append(df.iloc[i, 1])
 
     def __len__(self):
         return len(self.imgs)
@@ -69,6 +68,43 @@ class DataWithLabel(Dataset):
         label = self.labels[item]
 
         if self.transforms:
-            img = self.transforms(img)
+            img = self.transforms(image = img)['image']
 
-        return (img, label)
+        img = transforms.ToTensor()(img)
+        return img, label
+
+
+class DataNoLabel(Dataset):
+    def __init__(self, img_dir, transform=None):
+        '''
+        :param img_dir: directory of testing images
+        :param transform: albumentations transform
+        '''
+        self.img_dir = img_dir
+        self.transform = transform
+        self.img_ids = []
+        for filename in os.listdir(img_dir):
+            self.img_ids.append(filename)
+
+    def __len__(self):
+        return len(self.img_ids)
+
+    def __getitem__(self, item):
+        if torch.is_tensor(item):
+            item = item.tolist()
+
+        img_path = os.path.join(self.img_dir, self.img_ids[item])
+        img = Image.open(img_path)
+        img = np.array(img)
+        if self.transform:
+            img = self.transform(image = img)['image']
+        if img.ndim == 4:
+            new_img = []
+            for i in range(len(img)):
+                new_img.append(transforms.ToTensor()(img[i]))
+            img = torch.stack(new_img)
+        else:
+            img = transforms.ToTensor()(img)
+        img_id = self.img_ids[item].split('.')[0]
+
+        return img, img_id

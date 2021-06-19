@@ -6,16 +6,16 @@ import os
 import numpy as np
 from PIL import Image
 from torch.utils.data import DataLoader
+import albumentations as A
 
 from util import DataNoLabel, Rotate90
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 use_cuda = torch.cuda.is_available()
-SERIAL_NUMBER = 3
+SERIAL_NUMBER = 8
 NUM_WORKER = 8
 BATCH_SIZE = 8
-MODEL_WEIGHT = "best_weights.pth"
-
+MODEL_WEIGHT = "best_weights_" +str(SERIAL_NUMBER) + ".pth"
 
 
 img_ids = []
@@ -23,26 +23,29 @@ labels = []
 test_folder = 'test'
 
 # TTA
-tta1 = transforms.Compose([
-    transforms.RandomVerticalFlip(p=1),
-    Rotate90()
+tta1 = A.Compose([
+    A.HorizontalFlip(p=1)
 ])
-tta2 = transforms.Compose([
-    transforms.RandomHorizontalFlip(p=1),
-    Rotate90()
+tta2 = A.Compose([
+    A.VerticalFlip(p=1)
 ])
-tta3 = transforms.Compose([
-    Rotate90([0, 0.3, 0.4, 0.3])
+tta3 = A.Compose([
+    A.RandomRotate90(p=1)
 ])
 
-transform = transforms.Compose([
-    transforms.CenterCrop((48, 48)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225]),
-    transforms.Lambda(lambda image: torch.stack([
-        tta1(image), tta2(image), tta3(image), image
-    ]))
+test_transforms = [tta1, tta2, tta3]
+
+def tta(image, **kwargs):
+    imgs = [image]
+    for test_transform in test_transforms:
+        imgs.append(test_transform(image=image)['image'])
+    imgs = np.array(imgs)
+    return imgs
+
+transform = A.Compose([
+    A.HueSaturationValue(),
+    A.Normalize(p=1),
+    A.Lambda(name='tta', image=tta)
 ])
 
 infer_set = DataNoLabel(test_folder, transform)
@@ -67,8 +70,20 @@ if torch.cuda.device_count() > 1:
 print(device)
 model = model.to(device)
 model.eval()
+'''
+# Inference w/o tta
+with torch.no_grad():
+    for inputs, ids in infer_loader:
+        batch_size = inputs.size()[0]
+        inputs = inputs.to(device)
+        outputs = model(inputs)
+        pred = outputs > 0.5
+        for i in range(batch_size):
+            img_ids.append(ids[i])
+            labels.append(int(pred[i].item()))
+'''
 
-# Inference
+# Inference with tta
 with torch.no_grad():
     for inputs, ids in infer_loader:
         batch_size, n_tta, c, h, w = inputs.size()
@@ -82,6 +97,7 @@ with torch.no_grad():
             img_ids.append(ids[i])
             labels.append(int(pred[i].item()))
 
-result_path = 'submission' + str(SERIAL_NUMBER) + 'csv'
+
+result_path = 'submission_' + str(SERIAL_NUMBER) + '.csv'
 df = pd.DataFrame(data={'id': img_ids, 'label': labels})
 df.to_csv(result_path, index=False)

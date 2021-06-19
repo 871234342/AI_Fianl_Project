@@ -11,35 +11,48 @@ import numpy as np
 import copy
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
+import albumentations as A
 
 from util import DataWithLabel, Rotate90
 
-
+SERIAL_NUMBER = 9
+LOG_FILE = "log" + str(SERIAL_NUMBER) + ".txt"
 # Hyper-parameters
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-BATCH_SIZE = 1024
-WEIGHT_DECAY = 0
-LEARNING_RATE = 0.001
+BATCH_SIZE = 256
+WEIGHT_DECAY = 0.001
+LEARNING_RATE = 0.01
 NUM_WORKER = 8
 CHECKPOINT = None
-NUM_EPOCH = 30
-CHECKPOINT_INTERVAL = 1
+NUM_EPOCH = 50
+CHECKPOINT_INTERVAL = 2
+LR_STEP = 20
+VAL_SIZE = 0.1
 
+print("EXPERIMENT {}".format(SERIAL_NUMBER))
 # data prerocess
 df = pd.read_csv("train_labels.csv")
 ids = df['id'].tolist()
 labels = df['label'].tolist()
 
-x_train, x_val, y_train, y_val = train_test_split(ids, labels, test_size=0.1)
+x_train, x_val, y_train, y_val = train_test_split(ids, labels,
+                                                  test_size=VAL_SIZE)
 
 # data augmentation
-transform = transforms.Compose([
-    transforms.GaussianBlur((5, 5)),
-    transforms.CenterCrop((48, 48)),
-    Rotate90(),
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomVerticalFlip(),
-    transforms.ToTensor()
+transform = A.Compose([
+    A.RandomRotate90(p=0.5),
+    A.Flip(p=0.5),
+    A.OneOf([
+        A.CLAHE(clip_limit=2),
+        A.IAASharpen(),
+        A.IAAEmboss(),
+        A.RandomBrightnessContrast(),
+        A.ImageCompression(),
+        A.Blur(),
+        A.GaussNoise()
+    ], p=0.5),
+    A.HueSaturationValue(p=0.5),
+    A.Normalize(p=1)
 ])
 
 # data set construction
@@ -72,7 +85,7 @@ model = model.to(device)
 criterion = nn.BCELoss()
 optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE,
                       weight_decay=WEIGHT_DECAY)
-scheduler = lr_scheduler.StepLR(optimizer, 10, 0.1)
+scheduler = lr_scheduler.StepLR(optimizer, LR_STEP, 0.1)
 
 # Load checkpoint
 if CHECKPOINT:
@@ -88,19 +101,23 @@ best_accuracy = 0.0
 best_epoch = 0
 training_time = 0
 
-with open("log.txt", mode='w') as file:
-    file.write("Batch size: " + str(BATCH_SIZE))
+with open(LOG_FILE, mode='w') as file:
+    file.write("Test case: " + str(SERIAL_NUMBER))
+    file.write(" Batch size: " + str(BATCH_SIZE))
     file.write(" Number of epochs: " + str(NUM_EPOCH))
     file.write(" Learning rate: " + str(LEARNING_RATE))
     file.write(" Weight decay: " + str(WEIGHT_DECAY))
+    file.write(" Val size: " + str(VAL_SIZE))
+    file.write(" LR_step: " + str(LR_STEP) + "\n")
+    file.write(str(transform) + "\n")
 
 # Iterate through all epochs
 for epoch in range(NUM_EPOCH):
     print("Epoch {}/{}".format(epoch + 1, NUM_EPOCH))
     train_accuracy = 0
     val_accuracy = 0
-
-    batch_count = 0
+    train_loss= 0.0
+    val_loss = 0.0
 
     for phase in ['train', 'val']:
         if phase == 'train':
@@ -113,7 +130,6 @@ for epoch in range(NUM_EPOCH):
 
         # Iterate through all batches
         for inputs, labels in loaders[phase]:
-            batch_count += 1
             inputs = inputs.to(device)
             labels = labels.type(torch.FloatTensor).to(device)
             optimizer.zero_grad()
@@ -134,17 +150,17 @@ for epoch in range(NUM_EPOCH):
 
         # print result on screen
         if phase == 'train':
-            epoch_loss /= len(train_set)
+            train_loss = epoch_loss / len(train_set)
             train_accuracy += float(epoch_correct) / len(train_set)
-            print("{} Loss: {:.4f}, Acc: {:.4f} in {}s".format(
-                phase, epoch_loss, train_accuracy,
+            print("{} Loss: {:.8f}, Acc: {:.4f} in {}s".format(
+                phase, train_loss, train_accuracy,
                 time.time() - training_start
             ))
         else:
-            epoch_loss /= len(val_set)
+            val_loss = epoch_loss / len(val_set)
             val_accuracy += float(epoch_correct) / len(val_set)
-            print("{} Loss: {:.4f}, Acc: {:.4f}".format(
-                phase, epoch_loss, val_accuracy,
+            print("{} Loss: {:.8f}, Acc: {:.4f}".format(
+                phase, val_loss, val_accuracy,
                 time.time() - training_start
             ))
             # keep best model
@@ -155,12 +171,11 @@ for epoch in range(NUM_EPOCH):
 
         training_time += (time.time() - training_start)
 
-    print("Batch {} completed".format(batch_count))
-
     if (epoch + 1) % CHECKPOINT_INTERVAL == 0:
-        with open("log.txt", mode="a+") as file:
-            file.write("{}: train: {:.4f}, val: {:.4f}\n".format(
-                str(epoch + 1).zfill(3), train_accuracy, val_accuracy
+        with open(LOG_FILE, mode="a+") as file:
+            file.write("{}: train loss: {:.8f} acc: {:.4f}, val loss: {:.8f} acc:{:.4f}\n".format(
+                str(epoch + 1).zfill(3), train_loss,
+                train_accuracy, val_loss, val_accuracy
             ))
         PATH = 'checkpoint_' + str(epoch + 1) + '.pth'
         torch.save({
@@ -172,9 +187,14 @@ for epoch in range(NUM_EPOCH):
 print("Best accuracy: {:.4f} at epoch {}, total time: {}s".format(
     best_accuracy, best_epoch, training_time
 ))
+with open(LOG_FILE, mode='a+') as file:
+    file.write("Best accuracy: {:.4f} at epoch{}".format(
+        best_accuracy, best_epoch
+    ))
+PATH = "best_weights_" + str(SERIAL_NUMBER) + '.pth'
 model.load_state_dict(best_model_weights)
 torch.save({
     'model_state_dict': model.state_dict()
-}, "best_weights.pth")
+}, PATH)
 
 # Using best model
