@@ -1,0 +1,88 @@
+Test case: 11 Batch size: 128 Number of epochs: 12 Learning rate: 0.01 Weight decay: 0 LR_step: 2
+Compose([
+  Resize(always_apply=False, p=1, height=224, width=224, interpolation=1),
+  RandomRotate90(always_apply=False, p=0.5),
+  Flip(always_apply=False, p=0.5),
+  OneOf([
+    CLAHE(always_apply=False, p=0.5, clip_limit=(1, 2), tile_grid_size=(8, 8)),
+    IAASharpen(always_apply=False, p=0.5, alpha=(0.2, 0.5), lightness=(0.5, 1.0)),
+    IAAEmboss(always_apply=False, p=0.5, alpha=(0.2, 0.5), strength=(0.2, 0.7)),
+    RandomBrightnessContrast(always_apply=False, p=0.5, brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), brightness_by_max=True),
+    ImageCompression(always_apply=False, p=0.5, quality_lower=99, quality_upper=100, compression_type=0),
+    Blur(always_apply=False, p=0.5, blur_limit=(3, 7)),
+    GaussNoise(always_apply=False, p=0.5, var_limit=(10.0, 50.0)),
+  ], p=0.5),
+  HueSaturationValue(always_apply=False, p=0.5, hue_shift_limit=(-20, 20), sat_shift_limit=(-30, 30), val_shift_limit=(-20, 20)),
+  Normalize(always_apply=False, p=1, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), max_pixel_value=255.0),
+], p=1.0, bbox_params=None, keypoint_params=None, additional_targets={})
+private: 0.9040 public: 0.9177
+Fold 0
+001: train loss: 0.00210097 acc: 0.8904, val loss: 0.00136503 acc:0.9345
+002: train loss: 0.00138912 acc: 0.9327, val loss: 0.00136448 acc:0.9340
+003: train loss: 0.00116972 acc: 0.9447, val loss: 0.00108451 acc:0.9495
+004: train loss: 0.00103678 acc: 0.9513, val loss: 0.00097812 acc:0.9552
+005: train loss: 0.00093748 acc: 0.9561, val loss: 0.00097123 acc:0.9561
+006: train loss: 0.00086548 acc: 0.9606, val loss: 0.00087038 acc:0.9601
+007: train loss: 0.00079387 acc: 0.9638, val loss: 0.00100393 acc:0.9533
+008: train loss: 0.00074290 acc: 0.9664, val loss: 0.00084859 acc:0.9620
+009: train loss: 0.00070161 acc: 0.9680, val loss: 0.00112248 acc:0.9478
+010: train loss: 0.00065229 acc: 0.9704, val loss: 0.00084186 acc:0.9615
+011: train loss: 0.00061637 acc: 0.9722, val loss: 0.00122938 acc:0.9444
+012: train loss: 0.00058079 acc: 0.9738, val loss: 0.00098328 acc:0.9545
+Best accuracy: 0.9620 at epoch8
+Fold 1
+001: train loss: 0.00208885 acc: 0.8906, val loss: 0.00136390 acc:0.9338
+002: train loss: 0.00139094 acc: 0.9322, val loss: 0.00115307 acc:0.9466
+003: train loss: 0.00118533 acc: 0.9440, val loss: 0.00101352 acc:0.9535
+004: train loss: 0.00105324 acc: 0.9509, val loss: 0.00142988 acc:0.9285
+005: train loss: 0.00094805 acc: 0.9559, val loss: 0.00110863 acc:0.9489
+006: train loss: 0.00086700 acc: 0.9599, val loss: 0.00082058 acc:0.9632
+007: train loss: 0.00080845 acc: 0.9626, val loss: 0.00087218 acc:0.9598
+008: train loss: 0.00074690 acc: 0.9661, val loss: 0.00078140 acc:0.9647
+009: train loss: 0.00070239 acc: 0.9678, val loss: 0.00070446 acc:0.9696
+010: train loss: 0.00066368 acc: 0.9696, val loss: 0.00078132 acc:0.9662
+011: train loss: 0.00062636 acc: 0.9717, val loss: 0.00069100 acc:0.9684
+012: train loss: 0.00058710 acc: 0.9732, val loss: 0.00074223 acc:0.9679
+Best accuracy: 0.9696 at epoch9
+Fold 2
+001: train loss: 0.00210110 acc: 0.8892, val loss: 0.00140912 acc:0.9324
+002: train loss: 0.00139387 acc: 0.9322, val loss: 0.00111811 acc:0.9483
+003: train loss: 0.00117806 acc: 0.9443, val loss: 0.00102747 acc:0.9525
+004: train loss: 0.00103537 acc: 0.9516, val loss: 0.00098232 acc:0.9548
+005: train loss: 0.00094855 acc: 0.9562, val loss: 0.00091276 acc:0.9576
+006: train loss: 0.00085511 acc: 0.9611, val loss: 0.00083104 acc:0.9629
+007: train loss: 0.00079977 acc: 0.9636, val loss: 0.00079884 acc:0.9637
+008: train loss: 0.00074285 acc: 0.9662, val loss: 0.00077517 acc:0.9660
+009: train loss: 0.00069624 acc: 0.9684, val loss: 0.00078903 acc:0.9654
+010: train loss: 0.00064592 acc: 0.9712, val loss: 0.00075896 acc:0.9660
+011: train loss: 0.00062031 acc: 0.9719, val loss: 0.00070574 acc:0.9684
+012: train loss: 0.00057994 acc: 0.9744, val loss: 0.00087358 acc:0.9599
+Best accuracy: 0.9684 at epoch11
+Fold 3
+001: train loss: 0.00209632 acc: 0.8895, val loss: 0.00140148 acc:0.9323
+002: train loss: 0.00139652 acc: 0.9323, val loss: 0.00119810 acc:0.9426
+003: train loss: 0.00119124 acc: 0.9436, val loss: 0.00116396 acc:0.9438
+004: train loss: 0.00104340 acc: 0.9511, val loss: 0.00094103 acc:0.9565
+005: train loss: 0.00094741 acc: 0.9562, val loss: 0.00089913 acc:0.9595
+006: train loss: 0.00086628 acc: 0.9602, val loss: 0.00095715 acc:0.9549
+007: train loss: 0.00079603 acc: 0.9643, val loss: 0.00079507 acc:0.9636
+008: train loss: 0.00075816 acc: 0.9654, val loss: 0.00089818 acc:0.9614
+009: train loss: 0.00069789 acc: 0.9685, val loss: 0.00079178 acc:0.9646
+010: train loss: 0.00066973 acc: 0.9697, val loss: 0.00079227 acc:0.9652
+011: train loss: 0.00063113 acc: 0.9715, val loss: 0.00075823 acc:0.9662
+012: train loss: 0.00059444 acc: 0.9733, val loss: 0.00071495 acc:0.9683
+Best accuracy: 0.9683 at epoch12
+Fold 4
+001: train loss: 0.00209268 acc: 0.8904, val loss: 0.00146399 acc:0.9285
+002: train loss: 0.00139238 acc: 0.9318, val loss: 0.00116411 acc:0.9452
+003: train loss: 0.00117788 acc: 0.9444, val loss: 0.00101548 acc:0.9516
+004: train loss: 0.00104449 acc: 0.9509, val loss: 0.00138748 acc:0.9333
+005: train loss: 0.00094499 acc: 0.9567, val loss: 0.00100064 acc:0.9544
+006: train loss: 0.00086532 acc: 0.9606, val loss: 0.00084057 acc:0.9628
+007: train loss: 0.00079844 acc: 0.9637, val loss: 0.00097867 acc:0.9540
+008: train loss: 0.00074650 acc: 0.9662, val loss: 0.00076275 acc:0.9658
+009: train loss: 0.00070993 acc: 0.9681, val loss: 0.00074624 acc:0.9674
+010: train loss: 0.00066037 acc: 0.9702, val loss: 0.00078453 acc:0.9628
+011: train loss: 0.00062514 acc: 0.9723, val loss: 0.00074842 acc:0.9655
+012: train loss: 0.00059248 acc: 0.9732, val loss: 0.00071809 acc:0.9670
+Best accuracy: 0.9674 at epoch9
